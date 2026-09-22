@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+// Gera o cliente/aluno
+datasource db {
+  // "postgresql" faz o Prisma gerar SQL no dialeto do Postgres
+  // (SERIAL, TIMESTAMP, DOUBLE PRECISION...) em vez do dialeto do SQLite.
+  provider = "postgresql"
+
+  // url: usada pela API em produção, no dia a dia. Aponta para o endereço
+  // POOLED do Neon (aquele com "-pooler" no host).
+  url = env("DATABASE_URL")
+
+  // directUrl: usada APENAS pelos comandos de migration. Aponta para o
+  // endereço DIRETO do Neon (sem "-pooler"). Migrations não funcionam
+  // através de um connection pooler.
+  directUrl = env("DIRECT_URL")
+}
+
+//É responsável por fazer o envio dos dados ao database
+model Cliente {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  cpf       String   @unique
+  email     String   @unique
+  senha     String
+  telefone  String
+  dataNascimento DateTime @default(now())
+  criadoEm  DateTime @default(now())
+
+  matriculas   Matricula[]
+  fichasTreino FichaTreino[]
+//Cria uma tabela com as informações acima pra registrar elas.
+
+
+  @@map("clientes")
+}
+
+model Plano {
+  id           Int      @id @default(autoincrement())
+  nome         String
+  valorMensal  Float
+  duracaoMeses Int
+
+  matriculas Matricula[]
+
+  @@map("planos")
+}
+
+model Matricula {
+  id         Int      @id @default(autoincrement())
+  clienteId  Int
+  planoId    Int
+  dataInicio DateTime
+  status     String
+
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+  plano   Plano   @relation(fields: [planoId], references: [id])
+
+  @@map("matriculas")
+}
+
+model Instrutor {
+  id    Int    @id @default(autoincrement())
+  nome  String
+  email String @unique
+  senha String
+
+  fichasTreino FichaTreino[]
+
+  @@map("instrutores")
+}
+
+model FichaTreino {
+  id             Int      @id @default(autoincrement())
+  clienteId      Int
+  instrutorId    Int
+  objetivo       String
+  dataElaboracao DateTime
+
+  cliente   Cliente   @relation(fields: [clienteId], references: [id])
+  instrutor Instrutor @relation(fields: [instrutorId], references: [id])
+
+  exercicios FichaExercicio[]
+
+  @@map("fichas_treino")
+}
+
+model Exercicio {
+  id   Int    @id @default(autoincrement())
+  nome String
+
+  fichas FichaExercicio[]
+
+  @@map("exercicios")
+}
+
+model FichaExercicio {
+  id               Int @id @default(autoincrement())
+  fichaTreinoId    Int
+  exercicioId      Int
+  series            Int
+  repeticoes        Int
+  descansoSegundos Int
+
+  fichaTreino FichaTreino @relation(fields: [fichaTreinoId], references: [id])
+  exercicio   Exercicio   @relation(fields: [exercicioId], references: [id])
+
+  @@map("ficha_exercicios")
+}
+//Cada model é uma tabela com informações a ser utilizada, é uma organização dos dados e do código para garantir um bom funcionamento.
